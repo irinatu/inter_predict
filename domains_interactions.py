@@ -48,7 +48,7 @@ def clip(arr, stddevs=10):
 def calculate_prob(mat_dom, dom):
     print "#domain_1 domain_2 p-value"
     N = np.sum(mat_dom)
-    acc = 0
+    #acc = 0
     dl = mat_dom.shape[0]
     all_cont = dl*(dl-1)/2
     for  i in dom.keys():
@@ -60,15 +60,17 @@ def calculate_prob(mat_dom, dom):
             oczekiw = float(a)*float(b)/float(N)
             #print "Oczekiw",oczekiw, mat_dom[dom[i][0]][dom[j][0]]
             if oczekiw == 0.0 or mat_dom[dom[i][0]][dom[j][0]] == 0.0:
-                print i, j, 1.0 
-                continue
+                p = 1.0
+                #print i, j, 1.0 
+                #continue
 #==============================================================================
             #print "oczekiwana ", oczekiw, " obserwowana ", mat_dom[i][j]
             #print i, dom[i][0], dom[i][1], j, dom[j][0], dom[j][1], N, a, b,mat_dom[i][j], p, acc, all_cont
             #print i, dom[i][1], dom[i][2], j, dom[j][1], dom[j][2], p
-            print i, j, p
+            #print i, j, p
 #==============================================================================
-            #if p < 0.1:
+            if p < opts.CutOff:
+                print i, j, p
             #    acc +=1
             #    print "oczekiwana ", oczekiw, " obserwowana ", mat_dom[i][j]
             #    print i, j, N, a, b,mat_dom[i][j], p, acc, all_cont
@@ -88,6 +90,14 @@ def symmetric(ma):
 def int_wrapper(read):
     for v in read:
         yield map(int,v[2:])
+        
+def check_delim(fi):
+    f = open(fi)
+    sniffer = csv.Sniffer()
+    dialect = sniffer.sniff(f.readline())
+    deli = dialect.delimiter
+    print "DELIM", dialect.delimiter
+    return deli
 
 if __name__ == '__main__':
 
@@ -96,25 +106,23 @@ if __name__ == '__main__':
     optparser.add_option('-d', type = "string", default = "", dest="Domains", help = "Txt file with domain definition in the format: dom_id(intiger) chromosome(intiger) dom_start(bp) dom_end(bp) sherpa_level(optional)")
     optparser.add_option('-l', type = "string", default = "", dest="Level", help = "The level of sherpa")
     optparser.add_option('-c', type = "string", default = "", dest="Chrom", help = "The number of chromosome")
-    optparser.add_option('-p', action="store_true", default = False, dest="Plot", help = "Plot results. You need matplotlib library")
+    optparser.add_option('-p', action="store_true", default = False, dest="Plot", help = "Plot results. You need instaled matplotlib library. Default - turned off, write -p to turn it on.")
+    optparser.add_option('-r', type = "float", dest="Resol", help = "The resolution of HiC map")
+    optparser.add_option('-f', type = "float", default = 0.05, dest="CutOff", help = "Only contacts with p-val (0-1) smaller or equal than given cut_off are returned as an output. The default value = 0.05")
 
     (opts,args) = optparser.parse_args()
     #print len(sys.argv)
-    if len(sys.argv) < 4:
-        print "No matrix or domain information were given, sorry. Run script by: python long_dist.py -m matrix.npy -d domain_info.txt -c chrom_nr"
+    if len(sys.argv) < 9:
+        print "The information about matrix, domains and chromosome_nr is needed!!! Run script by: python long_dist.py -m matrix.npy -d domain_info.txt -c chrom_nr\n -r resolution"
         print optparser.format_help()
-        sys.exit(1)
-
-
-    #if len(sys.argv) < 3:
-    #    print "No matrix or domain information were given, sorry. Run script by: python long_dist.py matrix.npy domain_info.txt"
-     #   sys.exit(1)
-      
+        sys.exit(1)      
     else: arr = np.load(opts.Matrix)
-    #print sys.argv[2] 
-    #print numline
+
+    delimit = check_delim(opts.Domains)
+    print delimit
+
     with open(opts.Domains) as csvfile:   
-        reader = csv.reader(csvfile, delimiter=' ', quotechar='|')
+        reader = csv.reader(csvfile, delimiter=delimit, quotechar='|')
         #reader1 = int_wrapper(reader)
         #print type(reader), numline
         reader.next()
